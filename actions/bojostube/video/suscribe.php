@@ -1,11 +1,15 @@
 <?php
-$channel_guid = (int) get_input('channel_guid');
+$svc = elgg()->responseFactory;
+$request = elgg()->request;
+
+$channel_guid = (int) $request->getParam('channel_guid');
 $user = elgg_get_logged_in_user_entity();
 
 if ($user) {
     add_entity_relationship($user->guid, 'subscribed_to', $channel_guid);
-    system_message('Subscribed!');
+    $svc->addSuccessMessage(elgg_echo('bojostube:subscribed'));
+    return elgg_ok_response('', elgg_echo('bojostube:subscribed'));
 } else {
-    register_error('Must be logged in');
+    $svc->addErrorMessage(elgg_echo('bojostube:must_login'));
+    return elgg_error_response(elgg_echo('bojostube:must_login'));
 }
-forward(REFERER);

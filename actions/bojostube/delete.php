@@ -2,7 +2,8 @@
 
 elgg_gatekeeper();
 
-$guid = get_input('guid');
+$request = elgg()->request;
+$guid = $request->getParam('guid');
 $video = get_entity($guid);
 
 if (!$video instanceof ElggObject || $video->subtype !== 'bojostube_video') {

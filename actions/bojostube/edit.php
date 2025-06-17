@@ -5,82 +5,84 @@
  * @package ElggVideolist
  */
 
-$variables = elgg_get_config('videolist');
-$input = array();
+use Elgg\Exceptions\Http\BadRequestException;
+
+$svc = elgg()->responseFactory;
+$request = elgg()->request;
+$config = elgg()->config;
+
+$variables = $config->videolist ?? [];
+$input = [];
 foreach ($variables as $name => $type) {
     $should_filter_input = ($name !== 'video_url');
-	$input[$name] = get_input($name, null, $should_filter_input);
-	if ($name == 'title') {
-		$input[$name] = strip_tags($input[$name]);
-	}
-	if ($type == 'tags') {
-		$input[$name] = string_to_tag_array($input[$name]);
-	}
+    $input[$name] = $request->getParam($name, null, $should_filter_input);
+    if ($name == 'title') {
+        $input[$name] = strip_tags($input[$name]);
+    }
+    if ($type == 'tags') {
+        $input[$name] = string_to_tag_array($input[$name]);
+    }
 }
 
 // Get guids
-$video_guid = (int)get_input('video_guid');
-$container_guid = (int)get_input('container_guid');
+$video_guid = (int)$request->getParam('video_guid');
+$container_guid = (int)$request->getParam('container_guid');
 
-elgg_make_sticky_form('videolist');
-
-elgg_load_library('elgg:videolist');
+elgg()->stickyForms->make('videolist');
 
 if (!$video_guid) {
-	$input['video_url'] = elgg_trigger_plugin_hook('videolist:preprocess', 'url', $input, $input['video_url']);
+    $input['video_url'] = elgg_trigger_plugin_hook('videolist:preprocess', 'url', $input, $input['video_url']);
 
-	if (!$input['video_url']) {
-		register_error(elgg_echo('videolist:error:no_url'));
-		forward(REFERER);
-	}
+    if (!$input['video_url']) {
+        $svc->addErrorMessage(elgg_echo('videolist:error:no_url'));
+        return elgg_error_response(elgg_echo('videolist:error:no_url'));
+    }
 
-	$attributesPlatform = videolist_parse_url($input['video_url']);
+    $attributesPlatform = videolist_parse_url($input['video_url']);
 
-	if (!$attributesPlatform) {
-		register_error(elgg_echo('videolist:error:invalid_url'));
-		forward(REFERER);
-	}
-	list ($attributes, $platform) = $attributesPlatform;
-	/* @var Videolist_PlatformInterface $platform */
+    if (!$attributesPlatform) {
+        $svc->addErrorMessage(elgg_echo('videolist:error:invalid_url'));
+        return elgg_error_response(elgg_echo('videolist:error:invalid_url'));
+    }
+    list ($attributes, $platform) = $attributesPlatform;
+    /* @var Videolist_PlatformInterface $platform */
 
-	$attributes = array_merge($attributes, $platform->getData($attributes));
+    $attributes = array_merge($attributes, $platform->getData($attributes));
 
-	$input = array_merge($attributes, $input);
+    $input = array_merge($attributes, $input);
 } else {
-	unset($input['video_url']);
+    unset($input['video_url']);
 }
 
 if ($video_guid) {
-	$video = get_entity($video_guid);
-	if (!$video || !$video->canEdit()) {
-		register_error(elgg_echo('videolist:error:no_save'));
-		forward(REFERER);
-	}
-	$new_video = false;
+    $video = get_entity($video_guid);
+    if (!$video || !$video->canEdit()) {
+        $svc->addErrorMessage(elgg_echo('videolist:error:no_save'));
+        return elgg_error_response(elgg_echo('videolist:error:no_save'));
+    }
+    $new_video = false;
 } else {
-	$video = new ElggObject();
-	$video->subtype = 'videolist_item';
-	$new_video = true;
+    $video = new ElggObject();
+    $video->subtype = 'videolist_item';
+    $new_video = true;
 }
 
 if (sizeof($input) > 0) {
-	foreach ($input as $name => $value) {
-		$video->$name = $value;
-	}
+    foreach ($input as $name => $value) {
+        $video->$name = $value;
+    }
 }
 
 $video->container_guid = $container_guid;
 
 if ($video->save()) {
+    elgg()->stickyForms->clear('videolist');
 
-	elgg_clear_sticky_form('videolist');
-
-	// Let's save the thumbnail in the data folder
+    // Let's save the thumbnail in the data folder
     $thumb_url = $video->thumbnail;
     if ($thumb_url) {
         $thumbnail = file_get_contents($thumb_url);
         if ($thumbnail) {
-
             // write temporary file
             $prefix = "videolist/temp-" . $video->guid;
             $filehandler = new ElggFile();
@@ -93,18 +95,19 @@ if ($video->save()) {
         }
     }
 
-	system_message(elgg_echo('videolist:saved'));
+    $svc->addSuccessMessage(elgg_echo('videolist:saved'));
 
-	if ($new_video) {
-            elgg_create_river_item(array(
-                'view' => 'river/object/videolist_item/create',
-                'action_type' => 'create',
-                'subject_guid' => elgg_get_logged_in_user_guid(),
-                'object_guid' => $video->guid));
-	}
+    if ($new_video) {
+        elgg_create_river_item([
+            'view' => 'river/object/videolist_item/create',
+            'action_type' => 'create',
+            'subject_guid' => elgg_get_logged_in_user_guid(),
+            'object_guid' => $video->guid
+        ]);
+    }
 
-	forward($video->getURL());
+    return elgg_ok_response('', elgg_echo('videolist:saved'), $video->getURL());
 } else {
-	register_error(elgg_echo('videolist:error:no_save'));
-	forward(REFERER);
+    $svc->addErrorMessage(elgg_echo('videolist:error:no_save'));
+    return elgg_error_response(elgg_echo('videolist:error:no_save'));
 }

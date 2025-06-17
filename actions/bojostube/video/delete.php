@@ -5,17 +5,19 @@
 * @package ElggVideolist
 */
 
-$guid = (int) get_input('guid');
-elgg_load_library('elgg:videolist');
+$svc = elgg()->responseFactory;
+$request = elgg()->request;
+
+$guid = (int) $request->getParam('guid');
 $videolist_item = get_entity($guid);
-if (!$videolist_item->guid) {
-	register_error(elgg_echo("videolist:deletefailed"));
-	forward('videolist/all');
+if (!$videolist_item || !$videolist_item->guid) {
+    $svc->addErrorMessage(elgg_echo('videolist:deletefailed'));
+    return elgg_error_response(elgg_echo('videolist:deletefailed'));
 }
 
 if (!$videolist_item->canEdit()) {
-	register_error(elgg_echo("videolist:deletefailed"));
-	forward($videolist_item->getURL());
+    $svc->addErrorMessage(elgg_echo('videolist:deletefailed'));
+    return elgg_error_response(elgg_echo('videolist:deletefailed'));
 }
 
 $container = $videolist_item->getContainerEntity();
@@ -25,19 +27,11 @@ $thumbnail = "videolist/" . $videolist_item->guid . '.jpg';
 $video_owner_guid = $videolist_item->getOwnerGUID();
 
 if (!$videolist_item->delete()) {
-	register_error(elgg_echo("videolist:deletefailed"));
+    $svc->addErrorMessage(elgg_echo('videolist:deletefailed'));
+    return elgg_error_response(elgg_echo('videolist:deletefailed'));
 } else {
-        $result = videolist_remove_thumbnails($thumbnail, $video_owner_guid);
-	system_message(elgg_echo("videolist:deleted"));
+    $result = videolist_remove_thumbnails($thumbnail, $video_owner_guid);
+    $svc->addSuccessMessage(elgg_echo('videolist:deleted'));
 }
 
-// we can't come back to video url because it's deleted
-if($url != $_SERVER['HTTP_REFERER']) {
-	forward(REFERER);
-}
-
-if (elgg_instanceof($container, 'group')) {
-	forward("videolist/group/$container->guid/all");
-} else {
-	forward("videolist/owner/$container->username");
-}
+return elgg_ok_response('', elgg_echo('videolist:deleted'), elgg_generate_url('collection:object:bojostube_video:all'));

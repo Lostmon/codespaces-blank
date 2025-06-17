@@ -1,46 +1,30 @@
 <?php
 elgg_load_library('elgg:videolist');
-$url = get_input('url', '', false);
-$url = elgg_trigger_plugin_hook('videolist:preprocess', 'url', array(), $url);
+
+$svc = elgg()->responseFactory;
+$request = elgg()->request;
+
+$url = $request->getParam('url', '', false);
+$url = elgg_trigger_plugin_hook('videolist:preprocess', 'url', [], $url);
 
 if (!$url) {
-	$result = array(
-		'error' => true,
-		'msg' => elgg_echo('videolist:error:no_url'),
-	);
-} else {
-	$attributesPlatform = videolist_parse_url($url);
-
-	if (!$attributesPlatform) {
-		$result = array(
-			'error' => true,
-			'msg' => elgg_echo('videolist:error:invalid_url'),
-		);
-	} else {
-    	list ($attributes, $platform) = $attributesPlatform;
-		/* @var Videolist_PlatformInterface $platform */
-		$platform_data = $platform->getData($attributes);
-                if (!$platform_data)
-                {
-                    $result = array(
-                    'error' => true,
-                    'msg' => elgg_echo('videolist:error:empty_provider_data'),
-                    );
-                }
-                else
-                {
-                    //error_log('platform data= ' . print_r($platform_data,true));
-                    $result = array(
-                            'error' => false,
-                            'data' => array(
-                                    'title' => $platform_data['title'],
-                                    'description' => $platform_data['description'],
-                            ),
-                    );
-                }
-	}
+    return elgg_error_response(elgg_echo('videolist:error:no_url'));
 }
 
-echo json_encode($result);
+$attributesPlatform = videolist_parse_url($url);
 
-exit;
+if (!$attributesPlatform) {
+    return elgg_error_response(elgg_echo('videolist:error:invalid_url'));
+}
+
+list ($attributes, $platform) = $attributesPlatform;
+/* @var Videolist_PlatformInterface $platform */
+$platform_data = $platform->getData($attributes);
+if (!$platform_data) {
+    return elgg_error_response(elgg_echo('videolist:error:empty_provider_data'));
+}
+
+return elgg_ok_response([
+    'title' => $platform_data['title'],
+    'description' => $platform_data['description'],
+]);

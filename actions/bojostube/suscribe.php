@@ -2,7 +2,8 @@
 
 elgg_gatekeeper();
 
-$username = get_input('username');
+$request = elgg()->request;
+$username = $request->getParam('username');
 $user = get_user_by_username($username);
 
 if (!$user) {
