@@ -1,7 +1,4 @@
 <?php
-elgg_load_library('elgg:videolist');
-
-$svc = elgg()->responseFactory;
 $request = elgg()->request;
 
 $url = $request->getParam('url', '', false);

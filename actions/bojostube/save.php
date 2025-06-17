@@ -2,10 +2,11 @@
 
 elgg_gatekeeper();
 
-$title = get_input('title');
-$description = get_input('description');
-$video_url = get_input('video_url');
-$guid = get_input('guid');
+$request = elgg()->request;
+$title = $request->getParam('title');
+$description = $request->getParam('description');
+$video_url = $request->getParam('video_url');
+$guid = $request->getParam('guid');
 
 if (!$title || !$video_url) {
     return elgg_error_response(elgg_echo('Missing title or video URL'));
