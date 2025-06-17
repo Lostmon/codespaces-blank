@@ -1,0 +1,23 @@
+name: PHP CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.1'
+      - name: Install dependencies
+        run: composer install || true
+      - name: Run linter
+        run: |
+          composer global require "squizlabs/php_codesniffer=*"
+          ~/.composer/vendor/bin/phpcs --standard=phpcs.xml
