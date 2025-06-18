@@ -1,1 +1,0 @@
-Eliminando archivos legacy y duplicados para modernizar la estructura del plugin según Elgg 6.2.
