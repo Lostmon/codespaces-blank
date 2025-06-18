@@ -1,6 +1,6 @@
 <?php
 // Vista para editar un video
-$guid = (int) get_input('guid');
+$guid = (int) elgg()->request->getParam('guid');
 $video = get_entity($guid);
 if (!$video || $video->subtype !== 'bojostube_video' || !$video->canEdit()) {
     throw new \Elgg\Exceptions\Http\EntityNotFoundException();
