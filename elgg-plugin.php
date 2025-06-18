@@ -40,8 +40,8 @@ return [
     
     // Nueva ruta para listar todos los videos
     'collection:object:bojostube_video:all' => [
-        'path' => '/bojostube',
-        'resource' => 'bojostube/videos/all'
+        'path' => '/bojostube/videos/all',
+        'resource' => 'bojostube/video/all'
     ],
     
     // Ruta para el canal de usuario
