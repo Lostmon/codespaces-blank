@@ -11,7 +11,7 @@ elgg_push_breadcrumb($title);
 $form_vars = [
     'prevent_double_submit' => true,
     'enctype' => 'multipart/form-data',
-    'action' => elgg_generate_action_url('bojostube/edit'), // Asegura que el formulario apunte a la acción correcta
+    'action' => elgg_generate_action_url('bojostube/save'), // Apunta a la acción correcta
 ];
 
 $body_vars = [
